@@ -1,22 +1,47 @@
-class EnhancedSaturdayStatusChecker {
+class MyanmarSaturdayStatusChecker {
     constructor() {
         this.baseSunday = new Date('2024-04-28');
         this.isBaseSundayWorking = true;
         this.selectedSaturday = null;
         this.currentCalendarMonth = new Date().getMonth();
-        this.savedPatterns = this.loadFromStorage('patterns') || {};
+        this.selectedCountry = 'myanmar';
+
+        // Myanmar Public Holidays 2025 (Latest official holidays)
+        this.myanmarHolidays2025 = [
+            { date: '2025-01-01', name: 'New Year Day' },
+            { date: '2025-01-04', name: 'Independence Day' },
+            { date: '2025-02-12', name: 'Union Day' },
+            { date: '2025-03-02', name: 'Peasants Day' },
+            { date: '2025-03-27', name: 'Armed Forces Day' },
+            { date: '2025-04-13', name: 'Thingyan Water Festival (Day 1)' },
+            { date: '2025-04-14', name: 'Thingyan Water Festival (Day 2)' },
+            { date: '2025-04-15', name: 'Thingyan Water Festival (Day 3)' },
+            { date: '2025-04-16', name: 'Thingyan Water Festival (Day 4)' },
+            { date: '2025-04-17', name: 'Myanmar New Year Day' },
+            { date: '2025-05-01', name: 'Labour Day' },
+            { date: '2025-05-12', name: 'Buddha Day (Vesak Day)' },
+            { date: '2025-07-19', name: 'Martyrs Day' },
+            { date: '2025-10-14', name: 'Thadingyut Festival (Day 1)' },
+            { date: '2025-10-15', name: 'Thadingyut Festival (Day 2)' },
+            { date: '2025-10-16', name: 'Thadingyut Festival (Day 3)' },
+            { date: '2025-11-02', name: 'Tazaungdaing Festival (Day 1)' },
+            { date: '2025-11-03', name: 'Tazaungdaing Festival (Day 2)' },
+            { date: '2025-12-25', name: 'Christmas Day' },
+            { date: '2025-12-31', name: 'New Year Eve' }
+        ];
 
         this.initializeElements();
         this.setupEventListeners();
         this.updateCurrentDateInfo();
-        this.populateSaturdaySelect(); // FIXED: Call method directly
+        this.populateSaturdaySelect();
         this.renderCalendar();
         this.calculateStatistics();
+        this.renderHolidayList();
         this.checkTodayStatus();
-        this.loadSettings();
     }
 
     initializeElements() {
+        this.countrySelect = document.getElementById('countrySelect');
         this.monthSelect = document.getElementById('monthSelect');
         this.saturdaySelect = document.getElementById('saturdaySelect');
         this.calendarMonth = document.getElementById('calendarMonth');
@@ -26,21 +51,20 @@ class EnhancedSaturdayStatusChecker {
         this.statusLabel = document.getElementById('statusLabel');
         this.statusExplanation = document.getElementById('statusExplanation');
         this.statusDetails = document.getElementById('statusDetails');
+        this.holidayInfo = document.getElementById('holidayInfo');
         this.currentDateInfo = document.getElementById('currentDateInfo');
         this.calendarContainer = document.getElementById('calendarContainer');
-        this.statsGrid = document.getElementById('statsGrid');
+        this.holidayList = document.getElementById('holidayList');
 
         // Buttons
         this.todayBtn = document.getElementById('todayBtn');
         this.nextSatBtn = document.getElementById('nextSatBtn');
         this.randomBtn = document.getElementById('randomBtn');
         this.exportBtn = document.getElementById('exportBtn');
-        this.savePatternBtn = document.getElementById('savePattern');
-        this.loadPatternBtn = document.getElementById('loadPattern');
-        this.resetPatternBtn = document.getElementById('resetPattern');
     }
 
     setupEventListeners() {
+        this.countrySelect.addEventListener('change', () => this.updateCountry());
         this.monthSelect.addEventListener('change', () => this.populateSaturdaySelect());
         this.saturdaySelect.addEventListener('change', () => this.updateStatus());
         this.calendarMonth.addEventListener('change', () => this.renderCalendar());
@@ -50,6 +74,21 @@ class EnhancedSaturdayStatusChecker {
         this.nextSatBtn.addEventListener('click', () => this.goToNextSaturday());
         this.randomBtn.addEventListener('click', () => this.selectRandomSaturday());
         this.exportBtn.addEventListener('click', () => this.exportCalendar());
+    }
+
+    updateCountry() {
+        this.selectedCountry = this.countrySelect.value;
+        this.renderCalendar();
+        this.calculateStatistics();
+        this.renderHolidayList();
+        this.updateStatus();
+    }
+
+    isPublicHoliday(date) {
+        if (this.selectedCountry !== 'myanmar') return null;
+
+        const dateStr = date.toISOString().split('T')[0];
+        return this.myanmarHolidays2025.find(holiday => holiday.date === dateStr);
     }
 
     updateCurrentDateInfo() {
@@ -80,10 +119,12 @@ class EnhancedSaturdayStatusChecker {
                 saturdays.forEach(saturday => {
                     const option = document.createElement('option');
                     option.value = saturday.toISOString().split('T')[0];
+                    const holiday = this.isPublicHoliday(saturday);
+                    const holidayText = holiday ? ` (${holiday.name})` : '';
                     option.textContent = saturday.toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric'
-                    });
+                    }) + holidayText;
                     this.saturdaySelect.appendChild(option);
                 });
             }
@@ -92,10 +133,12 @@ class EnhancedSaturdayStatusChecker {
             saturdays.forEach(saturday => {
                 const option = document.createElement('option');
                 option.value = saturday.toISOString().split('T')[0];
+                const holiday = this.isPublicHoliday(saturday);
+                const holidayText = holiday ? ` (${holiday.name})` : '';
                 option.textContent = saturday.toLocaleDateString('en-US', {
                     month: 'short',
                     day: 'numeric'
-                });
+                }) + holidayText;
                 this.saturdaySelect.appendChild(option);
             });
         }
@@ -115,6 +158,43 @@ class EnhancedSaturdayStatusChecker {
         }
 
         return saturdays;
+    }
+
+    getConsecutiveClosedDays(saturday) {
+        let consecutiveDays = 0;
+        let currentDate = new Date(saturday);
+
+        // Check current Saturday
+        if (this.isSaturdayClosedForAnyReason(currentDate)) {
+            consecutiveDays++;
+
+            // Check previous Saturdays
+            let prevSaturday = new Date(currentDate);
+            prevSaturday.setDate(prevSaturday.getDate() - 7);
+
+            while (prevSaturday.getFullYear() === 2025 && this.isSaturdayClosedForAnyReason(prevSaturday)) {
+                consecutiveDays++;
+                prevSaturday.setDate(prevSaturday.getDate() - 7);
+            }
+
+            // Check next Saturdays
+            let nextSaturday = new Date(currentDate);
+            nextSaturday.setDate(nextSaturday.getDate() + 7);
+
+            while (nextSaturday.getFullYear() === 2025 && this.isSaturdayClosedForAnyReason(nextSaturday)) {
+                consecutiveDays++;
+                nextSaturday.setDate(nextSaturday.getDate() + 7);
+            }
+        }
+
+        return consecutiveDays;
+    }
+
+    isSaturdayClosedForAnyReason(saturday) {
+        const holiday = this.isPublicHoliday(saturday);
+        if (holiday) return true;
+
+        return !this.isSaturdayOpen(saturday);
     }
 
     renderCalendar() {
@@ -158,14 +238,36 @@ class EnhancedSaturdayStatusChecker {
 
             if (date.getDay() === 6) { // Saturday
                 dayElement.classList.add('saturday');
-                const isOpen = this.isSaturdayOpen(date);
-                dayElement.classList.add(isOpen ? 'open' : 'closed');
+
+                const holiday = this.isPublicHoliday(date);
+                if (holiday) {
+                    dayElement.classList.add('holiday');
+                    dayElement.title = `Public Holiday: ${holiday.name}`;
+                } else {
+                    const isOpen = this.isSaturdayOpen(date);
+                    dayElement.classList.add(isOpen ? 'open' : 'closed');
+                }
+
+                // Check for consecutive closed days
+                const consecutiveDays = this.getConsecutiveClosedDays(date);
+                if (consecutiveDays >= 3) {
+                    dayElement.classList.add('consecutive-closed');
+                    dayElement.setAttribute('data-consecutive', consecutiveDays.toString());
+                    dayElement.title = (dayElement.title || '') + ` (${consecutiveDays} consecutive closed days)`;
+                }
 
                 dayElement.addEventListener('click', () => {
                     this.selectSaturday(date);
                 });
             } else {
                 dayElement.classList.add('disabled');
+
+                // Check if it's a public holiday on other days
+                const holiday = this.isPublicHoliday(date);
+                if (holiday) {
+                    dayElement.style.background = 'rgba(139, 92, 246, 0.2)';
+                    dayElement.title = `Public Holiday: ${holiday.name}`;
+                }
             }
 
             calendar.appendChild(dayElement);
@@ -180,7 +282,7 @@ class EnhancedSaturdayStatusChecker {
         this.populateSaturdaySelect();
         this.saturdaySelect.value = date.toISOString().split('T')[0];
         this.updateStatus();
-        this.renderCalendar(); // Re-render to show selection
+        this.renderCalendar();
     }
 
     updateStatus() {
@@ -190,11 +292,22 @@ class EnhancedSaturdayStatusChecker {
             this.statusLabel.className = 'status-label';
             this.statusExplanation.textContent = 'Please select a Saturday to check its status';
             this.statusDetails.textContent = '';
+            this.holidayInfo.textContent = '';
             return;
         }
 
         this.selectedSaturday = new Date(selectedDate);
-        const isOpen = this.isSaturdayOpen(this.selectedSaturday);
+        const holiday = this.isPublicHoliday(this.selectedSaturday);
+
+        let isOpen, statusReason;
+
+        if (holiday) {
+            isOpen = false;
+            statusReason = 'Public Holiday';
+        } else {
+            isOpen = this.isSaturdayOpen(this.selectedSaturday);
+            statusReason = 'Alternating Pattern';
+        }
 
         // Animate status change
         this.statusLabel.style.transform = 'scale(0.8)';
@@ -207,39 +320,85 @@ class EnhancedSaturdayStatusChecker {
             this.statusLabel.style.opacity = '1';
         }, 150);
 
-        const nextSunday = this.getNextSunday(this.selectedSaturday);
-        const isNextSundayWorking = this.isSundayWorking(nextSunday);
+        if (holiday) {
+            this.statusExplanation.textContent =
+                `This Saturday is Closed due to ${holiday.name}.`;
+            this.statusDetails.textContent =
+                `Public holidays override the regular alternating pattern.`;
+            this.holidayInfo.textContent = `🎉 ${holiday.name}`;
+        } else {
+            const nextSunday = this.getNextSunday(this.selectedSaturday);
+            const isNextSundayWorking = this.isSundayWorking(nextSunday);
 
-        this.statusExplanation.textContent =
-            `This Saturday is ${isOpen ? 'Open' : 'Closed'} based on alternating Sunday logic.`;
+            this.statusExplanation.textContent =
+                `This Saturday is ${isOpen ? 'Open' : 'Closed'} based on alternating Sunday logic.`;
 
-        this.statusDetails.textContent =
-            `Next Sunday (${nextSunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}) is ${isNextSundayWorking ? 'a working' : 'an off'} Sunday.`;
+            this.statusDetails.textContent =
+                `Next Sunday (${nextSunday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}) is ${isNextSundayWorking ? 'a working' : 'an off'} Sunday.`;
+
+            this.holidayInfo.textContent = '';
+        }
+
+        // Check for consecutive closed days
+        const consecutiveDays = this.getConsecutiveClosedDays(this.selectedSaturday);
+        if (consecutiveDays >= 3) {
+            this.holidayInfo.textContent += ` ⚠️ ${consecutiveDays} consecutive closed Saturdays`;
+        }
     }
 
     calculateStatistics() {
         let totalSaturdays = 0;
         let openSaturdays = 0;
+        let holidaySaturdays = 0;
 
         for (let month = 0; month < 12; month++) {
             const saturdays = this.getSaturdaysInMonth(2025, month);
             totalSaturdays += saturdays.length;
 
             saturdays.forEach(saturday => {
-                if (this.isSaturdayOpen(saturday)) {
+                const holiday = this.isPublicHoliday(saturday);
+                if (holiday) {
+                    holidaySaturdays++;
+                } else if (this.isSaturdayOpen(saturday)) {
                     openSaturdays++;
                 }
             });
         }
 
-        const closedSaturdays = totalSaturdays - openSaturdays;
+        const closedSaturdays = totalSaturdays - openSaturdays - holidaySaturdays;
         const openPercentage = Math.round((openSaturdays / totalSaturdays) * 100);
 
         document.getElementById('totalSaturdays').textContent = totalSaturdays;
         document.getElementById('openSaturdays').textContent = openSaturdays;
         document.getElementById('closedSaturdays').textContent = closedSaturdays;
-        document.getElementById('openPercentage').textContent = `${openPercentage}%`;
+        document.getElementById('holidaySaturdays').textContent = holidaySaturdays;
         document.getElementById('progressFill').style.width = `${openPercentage}%`;
+    }
+
+    renderHolidayList() {
+        this.holidayList.innerHTML = '';
+
+        this.myanmarHolidays2025.forEach(holiday => {
+            const holidayDate = new Date(holiday.date);
+            const isSaturday = holidayDate.getDay() === 6;
+
+            const holidayItem = document.createElement('div');
+            holidayItem.className = `holiday-item ${isSaturday ? 'holiday-saturday' : ''}`;
+
+            holidayItem.innerHTML = `
+                <div>
+                    <div class="holiday-date">${holidayDate.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        weekday: 'short'
+                    })}</div>
+                    <div class="holiday-name">${holiday.name}</div>
+                </div>
+                ${isSaturday ? '<span style="color: var(--warning-color); font-weight: bold;">📅 Saturday</span>' : ''}
+            `;
+
+            this.holidayList.appendChild(holidayItem);
+        });
     }
 
     goToToday() {
@@ -250,37 +409,31 @@ class EnhancedSaturdayStatusChecker {
                 this.selectSaturday(nextSaturday);
             }
         } else {
-            // If not 2025, go to first Saturday of 2025
             const firstSaturday = this.getSaturdaysInMonth(2025, 0)[0];
             this.selectSaturday(firstSaturday);
         }
     }
 
-    // FIXED: Improved Next Saturday logic to get exact next Saturday
     goToNextSaturday() {
         const today = new Date();
         let nextSaturday;
 
         if (today.getFullYear() === 2025) {
-            // If today is Saturday, get next Saturday (7 days later)
             if (today.getDay() === 6) {
                 nextSaturday = new Date(today);
                 nextSaturday.setDate(today.getDate() + 7);
             } else {
-                // Get the upcoming Saturday this week
                 nextSaturday = new Date(today);
                 const daysUntilSaturday = 6 - today.getDay();
                 nextSaturday.setDate(today.getDate() + daysUntilSaturday);
             }
 
-            // Check if the calculated Saturday is still in 2025
             if (nextSaturday.getFullYear() === 2025) {
                 this.selectSaturday(nextSaturday);
                 return;
             }
         }
 
-        // Fallback: Get first Saturday of 2025
         const firstSaturday = this.getSaturdaysInMonth(2025, 0)[0];
         this.selectSaturday(firstSaturday);
     }
@@ -298,17 +451,24 @@ class EnhancedSaturdayStatusChecker {
     exportCalendar() {
         const data = {
             year: 2025,
+            country: this.selectedCountry,
             baseSunday: this.baseSunday.toISOString().split('T')[0],
             isBaseSundayWorking: this.isBaseSundayWorking,
-            saturdays: []
+            saturdays: [],
+            holidays: this.myanmarHolidays2025
         };
 
         for (let month = 0; month < 12; month++) {
             const saturdays = this.getSaturdaysInMonth(2025, month);
             saturdays.forEach(saturday => {
+                const holiday = this.isPublicHoliday(saturday);
+                const status = holiday ? 'HOLIDAY' : (this.isSaturdayOpen(saturday) ? 'OPEN' : 'CLOSED');
+
                 data.saturdays.push({
                     date: saturday.toISOString().split('T')[0],
-                    status: this.isSaturdayOpen(saturday) ? 'OPEN' : 'CLOSED'
+                    status: status,
+                    holiday: holiday ? holiday.name : null,
+                    consecutiveClosed: this.getConsecutiveClosedDays(saturday)
                 });
             });
         }
@@ -317,32 +477,9 @@ class EnhancedSaturdayStatusChecker {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'saturday-schedule-2025.json';
+        a.download = 'myanmar-saturday-schedule-2025.json';
         a.click();
         URL.revokeObjectURL(url);
-    }
-
-    saveToStorage(key, data) {
-        try {
-            localStorage.setItem(`saturdayChecker_${key}`, JSON.stringify(data));
-        } catch (e) {
-            console.warn('Could not save to localStorage:', e);
-        }
-    }
-
-    loadFromStorage(key) {
-        try {
-            const data = localStorage.getItem(`saturdayChecker_${key}`);
-            return data ? JSON.parse(data) : null;
-        } catch (e) {
-            console.warn('Could not load from localStorage:', e);
-            return null;
-        }
-    }
-
-    loadSettings() {
-        // Settings are now read-only, so we don't load from storage
-        // Keep default values
     }
 
     isSaturdayOpen(saturday) {
@@ -388,7 +525,6 @@ class EnhancedSaturdayStatusChecker {
     }
 }
 
-// FIXED: Proper initialization
 document.addEventListener('DOMContentLoaded', () => {
-    new EnhancedSaturdayStatusChecker();
+    new MyanmarSaturdayStatusChecker();
 });
