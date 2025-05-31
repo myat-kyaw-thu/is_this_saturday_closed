@@ -87,7 +87,12 @@ class MyanmarSaturdayStatusChecker {
     isPublicHoliday(date) {
         if (this.selectedCountry !== 'myanmar') return null;
 
-        const dateStr = date.toISOString().split('T')[0];
+        // Fix timezone issue by using local date components
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
+
         return this.myanmarHolidays2025.find(holiday => holiday.date === dateStr);
     }
 
@@ -191,9 +196,11 @@ class MyanmarSaturdayStatusChecker {
     }
 
     isSaturdayClosedForAnyReason(saturday) {
+        // Check if it's a public holiday first
         const holiday = this.isPublicHoliday(saturday);
         if (holiday) return true;
 
+        // Then check normal pattern
         return !this.isSaturdayOpen(saturday);
     }
 
@@ -241,8 +248,10 @@ class MyanmarSaturdayStatusChecker {
 
                 const holiday = this.isPublicHoliday(date);
                 if (holiday) {
+                    // Holiday Saturdays are always shown as closed
+                    dayElement.classList.add('closed');
                     dayElement.classList.add('holiday');
-                    dayElement.title = `Public Holiday: ${holiday.name}`;
+                    dayElement.title = `Closed - Public Holiday: ${holiday.name}`;
                 } else {
                     const isOpen = this.isSaturdayOpen(date);
                     dayElement.classList.add(isOpen ? 'open' : 'closed');
@@ -359,13 +368,14 @@ class MyanmarSaturdayStatusChecker {
                 const holiday = this.isPublicHoliday(saturday);
                 if (holiday) {
                     holidaySaturdays++;
+                    // Holiday Saturdays count as closed, not separate
                 } else if (this.isSaturdayOpen(saturday)) {
                     openSaturdays++;
                 }
             });
         }
 
-        const closedSaturdays = totalSaturdays - openSaturdays - holidaySaturdays;
+        const closedSaturdays = totalSaturdays - openSaturdays; // Holiday Saturdays are included in closed count
         const openPercentage = Math.round((openSaturdays / totalSaturdays) * 100);
 
         document.getElementById('totalSaturdays').textContent = totalSaturdays;
