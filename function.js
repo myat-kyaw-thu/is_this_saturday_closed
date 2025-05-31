@@ -8,27 +8,35 @@ class MyanmarSaturdayStatusChecker {
 
         // Myanmar Public Holidays 2025 (Latest official holidays)
         this.myanmarHolidays2025 = [
-            { date: '2025-01-01', name: 'New Year Day' },
+            { date: '2025-01-01', name: 'New Year\'s Day' },
             { date: '2025-01-04', name: 'Independence Day' },
+            { date: '2025-01-29', name: 'Chinese New Year' },
             { date: '2025-02-12', name: 'Union Day' },
-            { date: '2025-03-02', name: 'Peasants Day' },
+            { date: '2025-03-02', name: 'Peasants\' Day' },
+            { date: '2025-03-13', name: 'Full Moon Day of Tabaung' },
             { date: '2025-03-27', name: 'Armed Forces Day' },
-            { date: '2025-04-13', name: 'Thingyan Water Festival (Day 1)' },
-            { date: '2025-04-14', name: 'Thingyan Water Festival (Day 2)' },
-            { date: '2025-04-15', name: 'Thingyan Water Festival (Day 3)' },
-            { date: '2025-04-16', name: 'Thingyan Water Festival (Day 4)' },
-            { date: '2025-04-17', name: 'Myanmar New Year Day' },
+            { date: '2025-04-13', name: 'Thingyan Water Festival' },
+            { date: '2025-04-14', name: 'Thingyan Water Festival' },
+            { date: '2025-04-15', name: 'Thingyan Water Festival' },
+            { date: '2025-04-16', name: 'Thingyan Water Festival' },
+            { date: '2025-04-17', name: 'Myanmar New Year' },
+            { date: '2025-04-18', name: 'Thingyan Water Festival' },
+            { date: '2025-04-19', name: 'Thingyan Water Festival' },
+            { date: '2025-04-20', name: 'Thingyan Water Festival' },
+            { date: '2025-04-21', name: 'Thingyan Water Festival' },
+            { date: '2025-04-22', name: 'Thingyan Water Festival' },
             { date: '2025-05-01', name: 'Labour Day' },
-            { date: '2025-05-12', name: 'Buddha Day (Vesak Day)' },
-            { date: '2025-07-19', name: 'Martyrs Day' },
-            { date: '2025-10-14', name: 'Thadingyut Festival (Day 1)' },
-            { date: '2025-10-15', name: 'Thadingyut Festival (Day 2)' },
-            { date: '2025-10-16', name: 'Thadingyut Festival (Day 3)' },
-            { date: '2025-11-02', name: 'Tazaungdaing Festival (Day 1)' },
-            { date: '2025-11-03', name: 'Tazaungdaing Festival (Day 2)' },
+            { date: '2025-05-11', name: 'Full Moon Day of Kasone' },
+            { date: '2025-06-07', name: 'Eid al-Adha' },
+            { date: '2025-07-09', name: 'Full Moon Day of Waso' },
+            { date: '2025-07-19', name: 'Martyrs\' Day' },
+            { date: '2025-10-06', name: 'Full Moon Day of Thadingyut' },
+            { date: '2025-10-21', name: 'Deepavali (Diwali)' },
+            { date: '2025-11-04', name: 'Full Moon Day of Tazaungmone' },
+            { date: '2025-11-14', name: 'National Day' },
             { date: '2025-12-25', name: 'Christmas Day' },
-            { date: '2025-12-31', name: 'New Year Eve' }
-        ];
+            { date: '2025-12-31', name: 'New Year\'s Eve' }
+          ];
 
         this.initializeElements();
         this.setupEventListeners();
